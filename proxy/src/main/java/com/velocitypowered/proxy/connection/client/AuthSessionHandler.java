@@ -99,7 +99,7 @@ public class AuthSessionHandler implements MinecraftSessionHandler {
       this.connectedPlayer = player;
       if (!server.canRegisterConnection(player)) {
         player.disconnect0(
-            Component.translatable("velocity.error.already-connected-proxy", NamedTextColor.RED),
+            Component.text("Você já está conectado no servidor!", NamedTextColor.RED),
             true);
         return CompletableFuture.completedFuture(null);
       }
@@ -150,7 +150,7 @@ public class AuthSessionHandler implements MinecraftSessionHandler {
           if (!unlinkedKey.internalAddHolder(player.getUniqueId())) {
             if (onlineMode) {
               inbound.disconnect(
-                  Component.translatable("multiplayer.disconnect.invalid_public_key"));
+                  Component.text("Falha ao autenticar (Chave pública inválida).").color(NamedTextColor.RED));
               return;
             } else {
               logger.warn("Key for player " + player.getUsername() + " could not be verified!");
@@ -173,7 +173,7 @@ public class AuthSessionHandler implements MinecraftSessionHandler {
   @Override
   public boolean handle(LoginAcknowledgedPacket packet) {
     if (loginState != State.SUCCESS_SENT) {
-      inbound.disconnect(Component.translatable("multiplayer.disconnect.invalid_player_data"));
+      inbound.disconnect(Component.text("Dados de jogador inválidos.").color(NamedTextColor.RED));
     } else {
       loginState = State.ACKNOWLEDGED;
       mcConnection.setActiveSessionHandler(StateRegistry.CONFIG,
@@ -204,7 +204,7 @@ public class AuthSessionHandler implements MinecraftSessionHandler {
         player.disconnect0(reason.get(), true);
       } else {
         if (!server.registerConnection(player)) {
-          player.disconnect0(Component.translatable("velocity.error.already-connected-proxy"),
+          player.disconnect0(Component.text("Você já está conectado no servidor!", NamedTextColor.RED),
               true);
           return;
         }
@@ -242,7 +242,7 @@ public class AuthSessionHandler implements MinecraftSessionHandler {
       Optional<RegisteredServer> toTry = event.getInitialServer();
       if (!toTry.isPresent()) {
         player.disconnect0(
-            Component.translatable("velocity.error.no-available-servers", NamedTextColor.RED),
+            Component.text("Não há servidores disponíveis para conectar você. Tente novamente mais tarde ou entre em contato com um administrador.", NamedTextColor.RED),
             true);
         return;
       }

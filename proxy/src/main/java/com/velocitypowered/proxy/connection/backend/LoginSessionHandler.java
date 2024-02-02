@@ -44,6 +44,7 @@ import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import java.util.concurrent.CompletableFuture;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -55,7 +56,8 @@ public class LoginSessionHandler implements MinecraftSessionHandler {
   private static final Logger logger = LogManager.getLogger(LoginSessionHandler.class);
 
   private static final Component MODERN_IP_FORWARDING_FAILURE =
-      Component.translatable("velocity.error.modern-forwarding-failed");
+      Component.text("Seu servidor não enviou uma solicitação de encaminhamento para o proxy. Certifique-se de que o servidor está configurado para encaminhamento.")
+              .color(NamedTextColor.RED);
 
   private final VelocityServer server;
   private final VelocityServerConnection serverConn;
