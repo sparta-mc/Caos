@@ -81,7 +81,6 @@ import com.velocitypowered.proxy.tablist.VelocityTabList;
 import com.velocitypowered.proxy.tablist.VelocityTabListLegacy;
 import com.velocitypowered.proxy.util.ClosestLocaleMatcher;
 import com.velocitypowered.proxy.util.DurationUtils;
-import com.velocitypowered.proxy.util.TranslatableMapper;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import java.net.InetSocketAddress;
@@ -117,7 +116,6 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.kyori.adventure.title.Title.Times;
 import net.kyori.adventure.title.TitlePart;
-import net.kyori.adventure.translation.GlobalTranslator;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -131,7 +129,7 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player, 
 
   private static final int MAX_PLUGIN_CHANNELS = 1024;
   private static final PlainTextComponentSerializer PASS_THRU_TRANSLATE =
-      PlainTextComponentSerializer.builder().flattener(TranslatableMapper.FLATTENER).build();
+      PlainTextComponentSerializer.builder().build();
   static final PermissionProvider DEFAULT_PERMISSIONS = s -> PermissionFunction.ALWAYS_UNDEFINED;
 
   private static final ComponentLogger logger = ComponentLogger.logger(ConnectedPlayer.class);
@@ -353,24 +351,10 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player, 
     return connection.getProtocolVersion();
   }
 
-  /**
-   * Translates the message in the user's locale.
-   *
-   * @param message the message to translate
-   * @return the translated message
-   */
-  public Component translateMessage(Component message) {
-    Locale locale = ClosestLocaleMatcher.INSTANCE
-        .lookupClosest(getEffectiveLocale() == null ? Locale.getDefault() : getEffectiveLocale());
-    return GlobalTranslator.render(message, locale);
-  }
-
   @Override
   public void sendMessage(@NonNull Identity identity, @NonNull Component message) {
-    Component translated = translateMessage(message);
-
     connection.write(getChatBuilderFactory().builder()
-        .component(translated).forIdentity(identity).toClient());
+        .component(message).forIdentity(identity).toClient());
   }
 
   @Override
@@ -379,31 +363,27 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player, 
     Preconditions.checkNotNull(message, "message");
     Preconditions.checkNotNull(type, "type");
 
-    Component translated = translateMessage(message);
-
     connection.write(getChatBuilderFactory().builder()
-        .component(translated).forIdentity(identity)
+        .component(message).forIdentity(identity)
         .setType(type == MessageType.CHAT ? ChatType.CHAT : ChatType.SYSTEM)
         .toClient());
   }
 
   @Override
   public void sendActionBar(net.kyori.adventure.text.@NonNull Component message) {
-    Component translated = translateMessage(message);
-
     ProtocolVersion playerVersion = getProtocolVersion();
     if (playerVersion.noLessThan(ProtocolVersion.MINECRAFT_1_11)) {
       // Use the title packet instead.
       GenericTitlePacket pkt = GenericTitlePacket.constructTitlePacket(
           GenericTitlePacket.ActionType.SET_ACTION_BAR, playerVersion);
-      pkt.setComponent(new ComponentHolder(playerVersion, translated));
+      pkt.setComponent(new ComponentHolder(playerVersion, message));
       connection.write(pkt);
     } else {
       // Due to issues with action bar packets, we'll need to convert the text message into a
       // legacy message and then inject the legacy text into a component... yuck!
       JsonObject object = new JsonObject();
       object.addProperty("text", LegacyComponentSerializer.legacySection()
-          .serialize(translated));
+          .serialize(message));
       LegacyChatPacket legacyChat = new LegacyChatPacket();
       legacyChat.setMessage(object.toString());
       legacyChat.setType(LegacyChatPacket.GAME_INFO_TYPE);
@@ -433,13 +413,11 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player, 
 
   @Override
   public void sendPlayerListHeaderAndFooter(final Component header, final Component footer) {
-    Component translatedHeader = translateMessage(header);
-    Component translatedFooter = translateMessage(footer);
-    this.playerListHeader = translatedHeader;
-    this.playerListFooter = translatedFooter;
+    this.playerListHeader = header;
+    this.playerListFooter = footer;
     if (this.getProtocolVersion().noLessThan(ProtocolVersion.MINECRAFT_1_8)) {
       this.connection.write(HeaderAndFooterPacket.create(
-          translatedHeader, translatedFooter, this.getProtocolVersion()));
+          header, footer, this.getProtocolVersion()));
     }
   }
 
@@ -459,13 +437,13 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player, 
       GenericTitlePacket subtitlePkt = GenericTitlePacket.constructTitlePacket(
           GenericTitlePacket.ActionType.SET_SUBTITLE, this.getProtocolVersion());
       subtitlePkt.setComponent(new ComponentHolder(
-          this.getProtocolVersion(), translateMessage(title.subtitle())));
+          this.getProtocolVersion(), title.subtitle()));
       connection.delayedWrite(subtitlePkt);
 
       GenericTitlePacket titlePkt = GenericTitlePacket.constructTitlePacket(
           GenericTitlePacket.ActionType.SET_TITLE, this.getProtocolVersion());
       titlePkt.setComponent(new ComponentHolder(
-          this.getProtocolVersion(), translateMessage(title.title())));
+          this.getProtocolVersion(), title.title()));
       connection.delayedWrite(titlePkt);
 
       connection.flush();
@@ -489,13 +467,13 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player, 
       GenericTitlePacket titlePkt = GenericTitlePacket.constructTitlePacket(
           GenericTitlePacket.ActionType.SET_TITLE, this.getProtocolVersion());
       titlePkt.setComponent(new ComponentHolder(
-          this.getProtocolVersion(), translateMessage((Component) value)));
+          this.getProtocolVersion(), (Component) value));
       connection.write(titlePkt);
     } else if (part == TitlePart.SUBTITLE) {
       GenericTitlePacket titlePkt = GenericTitlePacket.constructTitlePacket(
           GenericTitlePacket.ActionType.SET_SUBTITLE, this.getProtocolVersion());
       titlePkt.setComponent(new ComponentHolder(
-          this.getProtocolVersion(), translateMessage((Component) value)));
+          this.getProtocolVersion(), (Component) value));
       connection.write(titlePkt);
     } else if (part == TitlePart.TIMES) {
       Times times = (Times) value;
@@ -600,12 +578,10 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player, 
    * @param duringLogin whether the disconnect happened during login
    */
   public void disconnect0(Component reason, boolean duringLogin) {
-    Component translated = this.translateMessage(reason);
-
     if (server.getConfiguration().isLogPlayerConnections()) {
-      logger.info(Component.text(this + " has disconnected: ").append(translated));
+      logger.info(Component.text(this + " foi desconectado: ").append(reason));
     }
-    connection.closeWith(DisconnectPacket.create(translated,
+    connection.closeWith(DisconnectPacket.create(reason,
             this.getProtocolVersion(), duringLogin));
   }
 
@@ -649,13 +625,14 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player, 
 
     Component friendlyError;
     if (connectedServer != null && connectedServer.getServerInfo().equals(server.getServerInfo())) {
-      friendlyError = Component.translatable("velocity.error.connected-server-error",
-          Component.text(server.getServerInfo().getName()));
+        friendlyError = Component.text("Sua conexão com %s encontrou um problema.".formatted(server.getServerInfo().getName()))
+                .color(NamedTextColor.RED);
     } else {
       logger.error("{}: unable to connect to server {}", this, server.getServerInfo().getName(),
           wrapped);
-      friendlyError = Component.translatable("velocity.error.connecting-server-error",
-          Component.text(server.getServerInfo().getName()));
+      friendlyError = Component.text("Não é possível conectá-lo a %s. Por favor, tente novamente mais tarde."
+              .formatted(server.getServerInfo().getName()))
+              .color(NamedTextColor.RED);
     }
     handleConnectionException(server, null, friendlyError.color(NamedTextColor.RED), safe);
   }
@@ -679,17 +656,19 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player, 
     if (connectedServer != null && connectedServer.getServerInfo().equals(server.getServerInfo())) {
       logger.info("{}: kicked from server {}: {}", this, server.getServerInfo().getName(),
           plainTextReason);
-      handleConnectionException(server, disconnectReason,
-          Component.translatable("velocity.error.moved-to-new-server", NamedTextColor.RED,
-              Component.text(server.getServerInfo().getName()),
-              disconnectReason), safe);
+      handleConnectionException(server, disconnectReason, Component
+              .text("Você foi expulso de %s: %s".formatted(server.getServerInfo().getName(), disconnectReason))
+              .color(NamedTextColor.RED), safe);
     } else {
       logger.error("{}: disconnected while connecting to {}: {}", this,
           server.getServerInfo().getName(), plainTextReason);
+        handleConnectionException(server, disconnectReason, Component
+                .text("Você foi expulso de %s: %s".formatted(server.getServerInfo().getName(), disconnectReason))
+                .color(NamedTextColor.RED), safe);
       handleConnectionException(server, disconnectReason,
-          Component.translatable("velocity.error.cant-connect", NamedTextColor.RED,
-              Component.text(server.getServerInfo().getName()),
-              disconnectReason), safe);
+          Component.text("Não é possível se conectar a %s: %s"
+                  .formatted(server.getServerInfo().getName(), disconnectReason))
+                  .color(NamedTextColor.RED), safe);
     }
   }
 
@@ -1133,8 +1112,7 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player, 
               && (!event.isOverwriteKick() || event.getPlayer()
               .getProtocolVersion().noLessThan(ProtocolVersion.MINECRAFT_1_17))
           ) {
-            event.getPlayer().disconnect(Component
-                .translatable("multiplayer.requiredTexturePrompt.disconnect"));
+              event.getPlayer().disconnect(Component.text("Prompt de textura obrigatória."));
           }
         });
 

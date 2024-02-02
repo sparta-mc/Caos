@@ -37,12 +37,7 @@ import com.velocitypowered.api.util.Favicon;
 import com.velocitypowered.api.util.GameProfile;
 import com.velocitypowered.api.util.ProxyVersion;
 import com.velocitypowered.proxy.command.VelocityCommandManager;
-import com.velocitypowered.proxy.command.builtin.CallbackCommand;
-import com.velocitypowered.proxy.command.builtin.GlistCommand;
-import com.velocitypowered.proxy.command.builtin.SendCommand;
-import com.velocitypowered.proxy.command.builtin.ServerCommand;
-import com.velocitypowered.proxy.command.builtin.ShutdownCommand;
-import com.velocitypowered.proxy.command.builtin.VelocityCommand;
+import com.velocitypowered.proxy.command.builtin.CaosCommand;
 import com.velocitypowered.proxy.config.VelocityConfiguration;
 import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
 import com.velocitypowered.proxy.connection.player.VelocityResourcePackInfo;
@@ -58,8 +53,6 @@ import com.velocitypowered.proxy.protocol.util.GameProfileSerializer;
 import com.velocitypowered.proxy.scheduler.VelocityScheduler;
 import com.velocitypowered.proxy.server.ServerMap;
 import com.velocitypowered.proxy.util.AddressUtil;
-import com.velocitypowered.proxy.util.ClosestLocaleMatcher;
-import com.velocitypowered.proxy.util.ResourceUtils;
 import com.velocitypowered.proxy.util.VelocityChannelRegistrar;
 import com.velocitypowered.proxy.util.ratelimit.Ratelimiter;
 import com.velocitypowered.proxy.util.ratelimit.Ratelimiters;
@@ -68,8 +61,19 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
+import net.kyori.adventure.audience.Audience;
+import net.kyori.adventure.audience.ForwardingAudience;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.http.HttpClient;
 import java.nio.file.Files;
@@ -77,34 +81,11 @@ import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.KeyPair;
 import java.security.PrivilegedAction;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
-import net.kyori.adventure.audience.Audience;
-import net.kyori.adventure.audience.ForwardingAudience;
-import net.kyori.adventure.key.Key;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.translation.GlobalTranslator;
-import net.kyori.adventure.translation.TranslationRegistry;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Implementation of {@link ProxyServer}.
@@ -183,6 +164,8 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     return this.configuration;
   }
 
+
+  // Sparta start
   @Override
   public ProxyVersion getVersion() {
     Package pkg = VelocityServer.class.getPackage();
@@ -190,17 +173,18 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     String implVersion;
     String implVendor;
     if (pkg != null) {
-      implName = MoreObjects.firstNonNull(pkg.getImplementationTitle(), "Velocity");
+      implName = MoreObjects.firstNonNull(pkg.getImplementationTitle(), "Caos");
       implVersion = MoreObjects.firstNonNull(pkg.getImplementationVersion(), "<unknown>");
-      implVendor = MoreObjects.firstNonNull(pkg.getImplementationVendor(), "Velocity Contributors");
+      implVendor = MoreObjects.firstNonNull(pkg.getImplementationVendor(), "Caos Contributors");
     } else {
-      implName = "Velocity";
+      implName = "Caos";
       implVersion = "<unknown>";
-      implVendor = "Velocity Contributors";
+      implVendor = "Caos Contributors";
     }
 
     return new ProxyVersion(implName, implVendor, implVersion);
   }
+  // Sparta end
 
   @Override
   public VelocityCommandManager getCommandManager() {
@@ -217,20 +201,22 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     logger.info("Booting up {} {}...", getVersion().getName(), getVersion().getVersion());
     console.setupStreams();
 
-    registerTranslations();
-
     serverKeyPair = EncryptionUtils.createRsaKeyPair(1024);
 
     cm.logChannelInformation();
 
+    // Sparta start
     // Initialize commands first
-    commandManager.register(VelocityCommand.create(this));
-    commandManager.register(CallbackCommand.create());
-    commandManager.register(ServerCommand.create(this));
-    commandManager.register("shutdown", ShutdownCommand.command(this),
-        "end", "stop");
-    new GlistCommand(this).register();
-    new SendCommand(this).register();
+//    commandManager.register(VelocityCommand.create(this));
+//    commandManager.register(CallbackCommand.create());
+//    commandManager.register(ServerCommand.create(this));
+//    commandManager.register("shutdown", ShutdownCommand.command(this),
+//        "end", "stop");
+//    new GlistCommand(this).register();
+//    new SendCommand(this).register();
+
+    new CaosCommand(this).register();
+    // Sparta end
 
     this.doStartupConfigLoad();
 
@@ -267,64 +253,6 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     }
 
     Metrics.VelocityMetrics.startMetrics(this, configuration.getMetrics());
-  }
-
-  private void registerTranslations() {
-    final TranslationRegistry translationRegistry = TranslationRegistry
-        .create(Key.key("velocity", "translations"));
-    translationRegistry.defaultLocale(Locale.US);
-    try {
-      ResourceUtils.visitResources(VelocityServer.class, path -> {
-        logger.info("Loading localizations...");
-
-        final Path langPath = Path.of("lang");
-
-        try {
-          if (!Files.exists(langPath)) {
-            Files.createDirectory(langPath);
-            Files.walk(path).forEach(file -> {
-              if (!Files.isRegularFile(file)) {
-                return;
-              }
-              try {
-                Path langFile = langPath.resolve(file.getFileName().toString());
-                if (!Files.exists(langFile)) {
-                  try (InputStream is = Files.newInputStream(file)) {
-                    Files.copy(is, langFile);
-                  }
-                }
-              } catch (IOException e) {
-                logger.error("Encountered an I/O error whilst loading translations", e);
-              }
-            });
-          }
-
-          Files.walk(langPath).forEach(file -> {
-            if (!Files.isRegularFile(file)) {
-              return;
-            }
-
-            String filename = com.google.common.io.Files
-                .getNameWithoutExtension(file.getFileName().toString());
-            String localeName = filename.replace("messages_", "")
-                .replace("messages", "")
-                .replace('_', '-');
-            Locale locale = localeName.isBlank()
-                ? Locale.US
-                : Locale.forLanguageTag(localeName);
-
-            translationRegistry.registerAll(locale, file, false);
-            ClosestLocaleMatcher.INSTANCE.registerKnown(locale);
-          });
-        } catch (IOException e) {
-          logger.error("Encountered an I/O error whilst loading translations", e);
-        }
-      }, "com", "velocitypowered", "proxy", "l10n");
-    } catch (IOException e) {
-      logger.error("Encountered an I/O error whilst loading translations", e);
-      return;
-    }
-    GlobalTranslator.translator().addSource(translationRegistry);
   }
 
   @SuppressFBWarnings("DM_EXIT")
@@ -442,19 +370,21 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
       CountDownLatch latch = new CountDownLatch(evacuate.size());
       for (ConnectedPlayer player : evacuate) {
         Optional<RegisteredServer> next = player.getNextServerToTry();
+        final String moveFailMessage = "A sala que você estava conectado foi desligada e não foi possível ligá-lo até outro servidor.";
         if (next.isPresent()) {
           player.createConnectionRequest(next.get()).connectWithIndication()
               .whenComplete((success, ex) -> {
                 if (ex != null || success == null || !success) {
-                  player.disconnect(Component.text("Your server has been changed, but we could "
-                      + "not move you to any fallback servers."));
+                  player.disconnect(Component
+                          .text(moveFailMessage)
+                          .color(NamedTextColor.RED)
+                  );
                 }
                 latch.countDown();
               });
         } else {
           latch.countDown();
-          player.disconnect(Component.text("Your server has been changed, but we could "
-              + "not move you to any fallback servers."));
+          player.disconnect(Component.text(moveFailMessage).color(NamedTextColor.RED));
         }
       }
       try {
@@ -580,7 +510,10 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
    * @param explicitExit whether the user explicitly shut down the proxy
    */
   public void shutdown(boolean explicitExit) {
-    shutdown(explicitExit, Component.translatable("velocity.kick.shutdown"));
+      final TextComponent defaultShutdownMessage = Component
+              .text("Proxy desligando. Aguarde alguns instantes e tente conectar novamente.")
+              .color(NamedTextColor.RED);
+      shutdown(explicitExit, defaultShutdownMessage);
   }
 
   @Override
@@ -641,7 +574,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     } else {
       ConnectedPlayer existing = connectionsByUuid.get(connection.getUniqueId());
       if (existing != null) {
-        existing.disconnect(Component.translatable("multiplayer.disconnect.duplicate_login"));
+        existing.disconnect(Component.text("Você já está conectado no servidor!").color(NamedTextColor.RED));
       }
 
       // We can now replace the entries as needed.

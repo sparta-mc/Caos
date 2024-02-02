@@ -136,7 +136,7 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
       return true;
     }
     if (!this.timeKeeper.update(instant)) {
-      player.disconnect(Component.translatable("multiplayer.disconnect.out_of_order_chat"));
+      player.disconnect(Component.text("Falha ao sincronizar bate-papo.").color(NamedTextColor.RED));
       return false;
     }
     return true;
@@ -146,7 +146,7 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
   private boolean validateChat(String message) {
     if (CharacterUtil.containsIllegalCharacters(message)) {
       player.disconnect(
-          Component.translatable("velocity.error.illegal-chat-characters", NamedTextColor.RED));
+          Component.text("Caractéres não permitidos no chat.", NamedTextColor.RED));
       return false;
     }
     return true;
@@ -454,7 +454,7 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
   @Override
   public void exception(Throwable throwable) {
     player.disconnect(
-        Component.translatable("velocity.error.player-connection-error", NamedTextColor.RED));
+        Component.text("Ocorreu um erro ao lhe conectar.", NamedTextColor.RED));
   }
 
   @Override

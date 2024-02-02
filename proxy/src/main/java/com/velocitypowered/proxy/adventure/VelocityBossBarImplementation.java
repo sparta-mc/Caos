@@ -49,10 +49,7 @@ public final class VelocityBossBarImplementation implements BossBar.Listener,
 
   public boolean viewerAdd(final ConnectedPlayer viewer) {
     if (this.viewers.add(viewer)) {
-      final ComponentHolder name = new ComponentHolder(
-          viewer.getProtocolVersion(),
-          viewer.translateMessage(this.bar.name())
-      );
+      final ComponentHolder name = new ComponentHolder(viewer.getProtocolVersion(), this.bar.name());
       viewer.getConnection().write(BossBarPacket.createAddPacket(this.id, this.bar, name));
       return true;
     }
@@ -78,11 +75,10 @@ public final class VelocityBossBarImplementation implements BossBar.Listener,
       final Component newName
   ) {
     for (final ConnectedPlayer viewer : this.viewers) {
-      final Component translated = viewer.translateMessage(newName);
       final BossBarPacket packet = BossBarPacket.createUpdateNamePacket(
           this.id,
           this.bar,
-          new ComponentHolder(viewer.getProtocolVersion(), translated)
+          new ComponentHolder(viewer.getProtocolVersion(), newName)
       );
       viewer.getConnection().write(packet);
     }

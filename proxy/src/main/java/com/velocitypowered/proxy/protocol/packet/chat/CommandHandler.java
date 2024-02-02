@@ -66,7 +66,7 @@ public interface CommandHandler<T extends MinecraftPacket> {
             }).exceptionally(e -> {
               logger.info("Exception occurred while running command for {}", player.getUsername(), e);
               player.sendMessage(
-                  Component.translatable("velocity.command.generic-error", NamedTextColor.RED));
+                  Component.text("Ocorreu um erro ao executar este comando.", NamedTextColor.RED));
               return null;
             }), timestamp);
   }

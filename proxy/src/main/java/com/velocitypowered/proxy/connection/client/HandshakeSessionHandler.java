@@ -125,14 +125,15 @@ public class HandshakeSessionHandler implements MinecraftSessionHandler {
 
   private void handleLogin(HandshakePacket handshake, InitialInboundConnection ic) {
     if (!ProtocolVersion.isSupported(handshake.getProtocolVersion())) {
-      ic.disconnectQuietly(Component.translatable("multiplayer.disconnect.outdated_client")
-          .args(Component.text(ProtocolVersion.SUPPORTED_VERSION_STRING)));
+      ic.disconnectQuietly(Component.text("Versão do jogo incompatível. Suportamos versões a partir da 1.7.")
+              .color(NamedTextColor.RED));
       return;
     }
 
     InetAddress address = ((InetSocketAddress) connection.getRemoteAddress()).getAddress();
     if (!server.getIpAttemptLimiter().attempt(address)) {
-      ic.disconnectQuietly(Component.translatable("velocity.error.logging-in-too-fast"));
+      ic.disconnectQuietly(Component.text("Você está conectando muito rápido! Aguarde alguns instantes.")
+              .color(NamedTextColor.RED));
       return;
     }
 
@@ -143,7 +144,8 @@ public class HandshakeSessionHandler implements MinecraftSessionHandler {
     if (server.getConfiguration().getPlayerInfoForwardingMode() == PlayerInfoForwarding.MODERN
         && handshake.getProtocolVersion().lessThan(ProtocolVersion.MINECRAFT_1_13)) {
       ic.disconnectQuietly(
-          Component.translatable("velocity.error.modern-forwarding-needs-new-client"));
+          Component.text("Este servidor é compatível apenas com o Minecraft 1.13 ou superior.")
+                  .color(NamedTextColor.RED));
       return;
     }
 

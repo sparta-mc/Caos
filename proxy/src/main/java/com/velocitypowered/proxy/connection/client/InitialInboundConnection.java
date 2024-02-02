@@ -24,13 +24,11 @@ import com.velocitypowered.proxy.connection.MinecraftConnectionAssociation;
 import com.velocitypowered.proxy.connection.util.VelocityInboundConnection;
 import com.velocitypowered.proxy.protocol.packet.DisconnectPacket;
 import com.velocitypowered.proxy.protocol.packet.HandshakePacket;
-import com.velocitypowered.proxy.util.ClosestLocaleMatcher;
-import java.net.InetSocketAddress;
-import java.util.Locale;
-import java.util.Optional;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.logger.slf4j.ComponentLogger;
-import net.kyori.adventure.translation.GlobalTranslator;
+
+import java.net.InetSocketAddress;
+import java.util.Optional;
 
 /**
  * Implements {@link InboundConnection} for a newly-established connection.
@@ -93,12 +91,10 @@ public final class InitialInboundConnection implements VelocityInboundConnection
    * @param reason the reason for disconnecting
    */
   public void disconnect(Component reason) {
-    Component translated = GlobalTranslator.render(reason, ClosestLocaleMatcher.INSTANCE
-        .lookupClosest(Locale.getDefault()));
     if (connection.server.getConfiguration().isLogPlayerConnections()) {
-      logger.info(Component.text(this + " has disconnected: ").append(translated));
+      logger.info(Component.text(this + " has disconnected: ").append(reason));
     }
-    connection.closeWith(DisconnectPacket.create(translated, getProtocolVersion(), true));
+    connection.closeWith(DisconnectPacket.create(reason, getProtocolVersion(), true));
   }
 
   /**
@@ -107,8 +103,6 @@ public final class InitialInboundConnection implements VelocityInboundConnection
    * @param reason the reason for disconnecting
    */
   public void disconnectQuietly(Component reason) {
-    Component translated = GlobalTranslator.render(reason, ClosestLocaleMatcher.INSTANCE
-        .lookupClosest(Locale.getDefault()));
-    connection.closeWith(DisconnectPacket.create(translated, getProtocolVersion(), true));
+    connection.closeWith(DisconnectPacket.create(reason, getProtocolVersion(), true));
   }
 }

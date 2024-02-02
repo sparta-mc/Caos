@@ -94,7 +94,7 @@ public class InitialLoginSessionHandler implements MinecraftSessionHandler {
     if (playerKey != null) {
       if (playerKey.hasExpired()) {
         inbound.disconnect(
-            Component.translatable("multiplayer.disconnect.invalid_public_key_signature"));
+            Component.text("Falha ao autenticar (Assinatura de chave pública inválida).").color(NamedTextColor.RED));
         return true;
       }
 
@@ -108,13 +108,13 @@ public class InitialLoginSessionHandler implements MinecraftSessionHandler {
       }
 
       if (!isKeyValid) {
-        inbound.disconnect(Component.translatable("multiplayer.disconnect.invalid_public_key"));
+        inbound.disconnect(Component.text("Falha ao autenticar (Chave pública inválida).").color(NamedTextColor.RED));
         return true;
       }
     } else if (mcConnection.getProtocolVersion().noLessThan(ProtocolVersion.MINECRAFT_1_19)
         && forceKeyAuthentication
         && mcConnection.getProtocolVersion().lessThan(ProtocolVersion.MINECRAFT_1_19_3)) {
-      inbound.disconnect(Component.translatable("multiplayer.disconnect.missing_public_key"));
+      inbound.disconnect(Component.text("Falha ao autenticar (Chave pública não identificada).").color(NamedTextColor.RED));
       return true;
     }
     inbound.setPlayerKey(playerKey);
@@ -223,7 +223,7 @@ public class InitialLoginSessionHandler implements MinecraftSessionHandler {
 
             if (throwable != null) {
               logger.error("Unable to authenticate player", throwable);
-              inbound.disconnect(Component.translatable("multiplayer.disconnect.authservers_down"));
+              inbound.disconnect(Component.text("Falha ao comunicar com servidores Mojang para autenticação.").color(NamedTextColor.RED));
               return;
             }
 
@@ -249,7 +249,7 @@ public class InitialLoginSessionHandler implements MinecraftSessionHandler {
                 IdentifiedKeyImpl key = (IdentifiedKeyImpl) inbound.getIdentifiedKey();
                 if (!key.internalAddHolder(profile.getId())) {
                   inbound.disconnect(
-                      Component.translatable("multiplayer.disconnect.invalid_public_key"));
+                      Component.text("Falha ao autenticar (Chave pública inválida).").color(NamedTextColor.RED));
                 }
               }
               // All went well, initialize the session.
@@ -258,13 +258,13 @@ public class InitialLoginSessionHandler implements MinecraftSessionHandler {
             } else if (response.statusCode() == 204) {
               // Apparently an offline-mode user logged onto this online-mode proxy.
               inbound.disconnect(
-                  Component.translatable("velocity.error.online-mode-only", NamedTextColor.RED));
+                  Component.text("Conta não autenticada. Servidor exclusivo para minecraft Premium.", NamedTextColor.RED));
             } else {
               // Something else went wrong
               logger.error(
                   "Got an unexpected error code {} whilst contacting Mojang to log in {} ({})",
                   response.statusCode(), login.getUsername(), playerIp);
-              inbound.disconnect(Component.translatable("multiplayer.disconnect.authservers_down"));
+              inbound.disconnect(Component.text("Falha ao comunicar com servidores Mojang para autenticação.").color(NamedTextColor.RED));
             }
           }, mcConnection.eventLoop());
     } catch (GeneralSecurityException e) {

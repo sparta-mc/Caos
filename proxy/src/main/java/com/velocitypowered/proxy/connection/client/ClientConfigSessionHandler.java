@@ -176,7 +176,7 @@ public class ClientConfigSessionHandler implements MinecraftSessionHandler {
   @Override
   public void exception(Throwable throwable) {
     player.disconnect(
-        Component.translatable("velocity.error.player-connection-error", NamedTextColor.RED));
+        Component.text("Ocorreu um erro ao lhe conectar.", NamedTextColor.RED));
   }
 
   /**
