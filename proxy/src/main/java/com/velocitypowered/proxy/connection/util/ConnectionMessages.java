@@ -18,7 +18,6 @@
 package com.velocitypowered.proxy.connection.util;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TranslatableComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 
 /**
@@ -26,12 +25,12 @@ import net.kyori.adventure.text.format.NamedTextColor;
  */
 public class ConnectionMessages {
 
-  public static final TranslatableComponent ALREADY_CONNECTED = Component
-      .translatable("velocity.error.already-connected", NamedTextColor.RED);
-  public static final TranslatableComponent IN_PROGRESS = Component
-      .translatable("velocity.error.already-connecting", NamedTextColor.RED);
-  public static final TranslatableComponent INTERNAL_SERVER_CONNECTION_ERROR = Component
-      .translatable("velocity.error.internal-server-connection-error", NamedTextColor.RED);
+  public static final Component ALREADY_CONNECTED = Component
+      .text("Você já está conectado a esse servidor!", NamedTextColor.RED);
+  public static final Component IN_PROGRESS = Component
+      .text("Já estamos conectando você a esse servidor!", NamedTextColor.RED);
+  public static final Component INTERNAL_SERVER_CONNECTION_ERROR = Component
+      .text("Ocorreu um erro!", NamedTextColor.RED);
 
   private ConnectionMessages() {
     throw new AssertionError();

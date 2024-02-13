@@ -652,16 +652,15 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player, 
     }
 
     Component disconnectReason = disconnect.getReason().getComponent();
-    String plainTextReason = PASS_THRU_TRANSLATE.serialize(disconnectReason);
     if (connectedServer != null && connectedServer.getServerInfo().equals(server.getServerInfo())) {
       logger.info("{}: kicked from server {}: {}", this, server.getServerInfo().getName(),
-          plainTextReason);
+              disconnectReason);
       handleConnectionException(server, disconnectReason, Component
               .text("Você foi expulso de %s: %s".formatted(server.getServerInfo().getName(), disconnectReason))
               .color(NamedTextColor.RED), safe);
     } else {
       logger.error("{}: disconnected while connecting to {}: {}", this,
-          server.getServerInfo().getName(), plainTextReason);
+          server.getServerInfo().getName(), disconnectReason);
         handleConnectionException(server, disconnectReason, Component
                 .text("Você foi expulso de %s: %s".formatted(server.getServerInfo().getName(), disconnectReason))
                 .color(NamedTextColor.RED), safe);
